@@ -35,7 +35,7 @@ public class UserService implements UserDetailsService {
         UserModel newUser = new UserModel(
                 userRegisterDTO.login(),
                 senhaHash,
-                Role.ROLE_USER);
+                Role.USER);
 
         userRepository.save(newUser);
     }

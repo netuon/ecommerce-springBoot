@@ -25,8 +25,13 @@ public class JWTService {
             return JWT.create()
                     .withIssuer("ecommerce-api")
                     .withClaim("UserId", userModel.getId())
+                    .withClaim("role", userModel.getAuthorities()
+                            .stream()
+                            .findFirst()
+                            .map(a -> a.getAuthority())
+                            .orElse("ROLE_USER"))
                     .withSubject(userModel.getLogin())
-                    .withExpiresAt(Instant.now().plusSeconds(3600000))//tempo de vida do token
+                    .withExpiresAt(Instant.now().plusSeconds(3600))//tempo de vida do token
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
             throw  new RuntimeException("erro ao gerar token", exception);

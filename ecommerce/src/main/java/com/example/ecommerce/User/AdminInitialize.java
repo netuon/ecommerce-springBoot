@@ -15,12 +15,12 @@ public class AdminInitialize {
 
     @PostConstruct
     public void initialize() {
-        if(!userRepository.existsByRole(Role.ROLE_ADMIN)) {
+        if(!userRepository.existsByRole(Role.ADMIN)) {
             UserModel admin = new UserModel();
 
             admin.setLogin("neto");
             admin.setPassword(passwordEncoder.encode("12345678"));
-            admin.setRole(Role.ROLE_ADMIN);
+            admin.setRole(Role.ADMIN);
 
             userRepository.save(admin);
             System.out.println("Admin "+admin+" created sussecessfully");

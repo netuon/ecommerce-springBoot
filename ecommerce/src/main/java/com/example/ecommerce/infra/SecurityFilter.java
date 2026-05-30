@@ -1,6 +1,5 @@
 package com.example.ecommerce.infra;
 
-import com.example.ecommerce.User.UserService;
 import com.example.ecommerce.User.userRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -8,16 +7,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.token.TokenService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -27,40 +22,35 @@ public class SecurityFilter extends OncePerRequestFilter {
     @Autowired
     private userRepository userRepository;
 
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        var token = this.recoverToken(request);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-        if(token == null) {
-            filterChain.doFilter(request, response);
-            return;
-        } else {
-            var login = jwtService.verifyToken(token);//chama o service do token e verifica se tem login desse token
-            var role = jwtService.getRole(token);//verifica a role desse token
+        var token = recoverToken(request);
 
-            UserDetails user = userRepository.findByLogin(login);//pega o user com base no token validado
+        if (token != null) {
+            var login = jwtService.verifyToken(token); // retorna null se o token for inválido
 
-            var authorities = List.of(new SimpleGrantedAuthority(role));//"esse usuario tem essa role"
+            if (login != null) {
+                UserDetails user = userRepository.findByLogin(login);
 
-            var authentication = new UsernamePasswordAuthenticationToken(
-                    user,
-                    null,
-                    authorities);//esse comando cria o user autenticado no bd
-
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authentication);//diz que a request já esta autenticado
-            filterChain.doFilter(request, response);//permite a requisição ir ate o controller
+                if (user != null) {
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            user,
+                            null,
+                            user.getAuthorities() // pega as roles direto do UserModel
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            }
         }
 
+        filterChain.doFilter(request, response); // sempre deixa a requisição continuar
     }
-    private String recoverToken(HttpServletRequest request){//metodo que recebe a requisição HTTP
-        var authHeader = request.getHeader("Authorization");//essa linha pega o header authorization
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {//verifica se o header existe
-            return null;
-        }
+    private String recoverToken(HttpServletRequest request) {
+        var authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
         return authHeader.substring(7);
     }
 }
